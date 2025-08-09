@@ -1,48 +1,67 @@
 import MeetupDetails from "../../components/meetups/MeetupDetail";
+import { MongoClient, ObjectId } from "mongodb";
+import Head from "next/head";
 
-export default function MeetupDetail() {
+export default function MeetupDetail(props) {
   return (
-    <MeetupDetails
-      image="https://en.wikipedia.org/wiki/Royal_Palace_of_Madrid#/media/File:Palacio_Real_de_Madrid_Julio_2016_(cropped).jpg"
-      title="A first meetup"
-      address="Some street 5, some city 4"
-      description="The meetup description"
-    />
+    <>
+      <Head>
+        <title>{props.meetupData.title}</title>
+        <meta name="description" content={props.meetupData.descriptions} />
+      </Head>
+      <MeetupDetails
+        image={props.meetupData.image}
+        title={props.meetupData.title}
+        address={props.meetupData.address}
+        description={props.meetupData.description}
+      />
+    </>
   );
 }
 
 export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://shamecanales1082:kwTT9egcVBnAEZTx@cluster0.daoqyjp.mongodb.net/meetups?retryWrites=true&w=majority&appName=Cluster0"
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray(); //first object mean get all the objects, i have no filter criteria. 2nd argument defines which fields should be extrated for every document. means only include the id, no other field values.
+
+  client.close();
   return {
     fallback: false,
-    paths: [
-      {
-        params: {
-          meetupId: "m1",
-        },
+    paths: meetups.map((meetup) => ({
+      params: {
+        meetupId: meetup._id.toString(),
       },
-      {
-        params: {
-          meetupId: "m2",
-        },
-      },
-    ],
+    })),
   };
 }
 
 export async function getStaticProps(context) {
   // fetch data for a single meetup
   const meetupId = context.params.meetupId;
-  console.log(meetupId);
+  const client = await MongoClient.connect(
+    "mongodb+srv://shamecanales1082:kwTT9egcVBnAEZTx@cluster0.daoqyjp.mongodb.net/meetups?retryWrites=true&w=majority&appName=Cluster0"
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection("meetups");
+
+  const selectedMeetup = await meetupsCollection.findOne({
+    _id: new ObjectId(meetupId),
+  });
+
+  client.close();
 
   return {
     props: {
       meetupData: {
-        image:
-          "https://en.wikipedia.org/wiki/Royal_Palace_of_Madrid#/media/File:Palacio_Real_de_Madrid_Julio_2016_(cropped).jpg",
-        id: meetupId,
-        title: "First meetup",
-        address: "Some street 5, some city 4",
-        description: "The meetup description",
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.title,
+        address: selectedMeetup.address,
+        image: selectedMeetup.image,
+        description: selectedMeetup.description,
       },
     },
   };
