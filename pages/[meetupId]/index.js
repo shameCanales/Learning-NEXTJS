@@ -3,6 +3,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import Head from "next/head";
 
 export default function MeetupDetail(props) {
+  console.log(props.meetupData.title);
 
   return (
     <>
